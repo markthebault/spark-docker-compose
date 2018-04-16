@@ -1,0 +1,56 @@
+version: '3'
+services:
+  master:
+    image: gettyimages/spark:2.2.1-hadoop-2.7
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h master
+    hostname: master
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+    networks:
+      - spark-clstr
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  worker:
+    image: gettyimages/spark:2.2.1-hadoop-2.7
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker -c 2 -m 4gb spark://master:7077
+    hostname: worker
+    networks:
+      - spark-clstr
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+
+  spark-ui-proxy:
+    image: markthebault/spark-ui-proxy
+    command: master:8080 9090
+    ports:
+      - 9090:9090
+    networks:
+      - spark-clstr
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  zeppelin:
+    image: markthebault/zeppelin:0.7.3-spark2.2.1
+    ports:
+      - 8080:8080
+    networks:
+      - spark-clstr
+    environment:
+      - MASTER=spark://master:7077
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+        
+networks:
+  spark-clstr:

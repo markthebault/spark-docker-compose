@@ -1,0 +1,45 @@
+version: '3'
+services:
+
+  master:
+    image: gettyimages/spark:2.2.1-hadoop-2.7
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+    networks:
+      - spark-clstr
+
+
+  worker:
+    image: gettyimages/spark:2.2.1-hadoop-2.7
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker  spark://master:7077
+    networks:
+      - spark-clstr
+    deploy:
+      replicas: 2
+
+
+  spark-ui-proxy:
+    image: markthebault/spark-ui-proxy
+    command: master:8080 9090
+    ports:
+      - 9090:9090
+    networks:
+      - spark-clstr
+
+
+  zeppelin:
+    image: markthebault/zeppelin:0.7.3-spark2.2.1
+    ports:
+      - 8080:8080
+    networks:
+      - spark-clstr
+    environment:
+      - MASTER=spark://master:7077
+
+
+
+networks:
+  spark-clstr:
